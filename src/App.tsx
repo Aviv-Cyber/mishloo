@@ -1,5 +1,5 @@
 import './App.css';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, TrendingUp, Users } from 'lucide-react';
 import type { ActiveView, DeliveryRecord, User } from './types';
 import { useDeliveryStore } from './hooks/useDeliveryStore';
@@ -9,6 +9,12 @@ import { DashboardView } from './components/DashboardView';
 import { DeliveryWizard } from './components/DeliveryWizard';
 import { EntitiesView } from './components/EntitiesView';
 import { GitHubSettings } from './components/GitHubSettings';
+
+const DEFAULT_ADMIN: User = {
+  id: 'admin-1',
+  name: 'אביב',
+  role: 'admin',
+} as User;
 
 export default function App() {
   const {
@@ -26,10 +32,19 @@ export default function App() {
   const [activeView, setActiveView] = useState<ActiveView>('dashboard');
   const [editingRecord, setEditingRecord] = useState<DeliveryRecord | null>(null);
 
+  useEffect(() => {
+    if (store.users.length === 0) {
+      updateStoreAndSync(prev => ({
+        ...prev,
+        users: [DEFAULT_ADMIN]
+      }));
+    }
+  }, [store.users.length, updateStoreAndSync]);
+
   if (!currentUser) {
     return (
       <LoginScreen
-        users={store.users}
+        users={store.users.length > 0 ? store.users : [DEFAULT_ADMIN]}
         onLogin={(user: User, redirectToSettings?: boolean) => {
           setCurrentUser(user);
           setActiveView(redirectToSettings && user.role === 'admin' ? 'settings' : 'dashboard');
