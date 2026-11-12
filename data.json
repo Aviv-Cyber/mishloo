@@ -1,0 +1,66 @@
+{
+  "users": [
+    {
+      "id": "0001",
+      "username": "admin",
+      "password": "admin1234",
+      "name": "מנהל מערכת ראשי",
+      "role": "admin",
+      "vehicleType": "רכב",
+      "phone": "050-0000000",
+      "active": true
+    },
+    {
+      "id": "user-2",
+      "username": "harry",
+      "password": "1234",
+      "name": "הארי פוטר",
+      "role": "courier",
+      "vehicleType": "רכב",
+      "phone": "0500000001",
+      "active": true
+    },
+    {
+      "id": "user-1794449272296",
+      "username": "atar",
+      "password": "1234",
+      "name": "ראובן עטר",
+      "role": "courier",
+      "vehicleType": "אופנוע",
+      "phone": "0502900899",
+      "active": true
+    }
+  ],
+  "deliveries": [
+    {
+      "id": "rec-1794449419146",
+      "userId": "user-2",
+      "userName": "הארי פוטר",
+      "date": "2026-11-12",
+      "deliveriesCount": 11,
+      "totalKm": 11,
+      "totalIncome": 122,
+      "notes": ""
+    },
+    {
+      "id": "rec-1794449322262",
+      "userId": "user-1794449272296",
+      "userName": "ראובן עטר",
+      "date": "2026-11-12",
+      "deliveriesCount": 12,
+      "totalKm": 33,
+      "totalIncome": 442,
+      "notes": ""
+    },
+    {
+      "id": "rec-1",
+      "userId": "0001",
+      "userName": "מנהל מערכת ראשי",
+      "date": "2026-11-12",
+      "deliveriesCount": 19,
+      "totalKm": 104,
+      "totalIncome": 417,
+      "notes": ""
+    }
+  ]
+}
