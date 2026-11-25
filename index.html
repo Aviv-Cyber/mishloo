@@ -1,15 +1,2281 @@
-<!doctype html>
-<html lang="en">
-  <head>
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeliveryPulse - מערכת משלוחים</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>mishlow</title>
-    <script type="module" crossorigin src="/assets/index-CT6ZASfg.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-k6-nDte8.css">
-  </head>
-  <body>
-    <div id="root"></div>
-  </body>
+    <!-- Google Fonts: Heebo & Inter for clean Hebrew & Numeric typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Heebo', 'Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#2563eb',
+                            600: '#0265ff',
+                            700: '#1d4ed8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Heebo', 'Inter', sans-serif;
+            color: #1e293b;
+        }
+        /* Custom scrollbar for clean UI */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-blue-100 selection:text-blue-800">
+
+    <!-- ========================================== -->
+    <!-- TOAST NOTIFICATION BANNER                  -->
+    <!-- ========================================== -->
+    <div id="toast-container" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 pointer-events-none flex flex-col gap-2 items-center w-full max-w-md px-4"></div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 1: LOGIN SCREEN                       -->
+    <!-- ========================================== -->
+    <div id="login-view" class="min-h-screen flex flex-col items-center justify-center p-4 bg-[#f4f6f9]">
+        <div class="w-full max-w-[400px] flex flex-col items-center fade-in">
+            <!-- App Logo Icon -->
+            <div class="w-12 h-12 rounded-2xl bg-[#0265ff] flex items-center justify-center text-white shadow-lg shadow-blue-500/25 mb-3">
+                <i data-lucide="truck" class="w-6 h-6 stroke-[2.2]"></i>
+            </div>
+            <!-- Brand Title -->
+            <h1 class="text-[26px] font-extrabold text-[#0265ff] tracking-tight leading-tight">DeliveryPulse</h1>
+            <p class="text-xs text-slate-500 mt-1 mb-7">התחבר למערכת ניהול המשלוחים והסנכרון</p>
+
+            <!-- Login Card -->
+            <div class="w-full bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.05)] border border-slate-100 p-7">
+                <!-- Step 1: GitHub Token Verification -->
+                <div class="pb-4 mb-4 border-b border-slate-100 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label for="login-gh-token" class="block text-xs font-bold text-slate-700">1. אימות GitHub Token</label>
+                        <span id="login-token-status" class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">ממתין לאימות</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input type="password" id="login-gh-token" autocomplete="off" placeholder="הדבק GitHub Token לאימות" dir="ltr"
+                            class="flex-1 bg-slate-100/80 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-slate-800 placeholder-slate-400 outline-none transition-all text-left">
+                        <button type="button" id="btn-verify-login-token"
+                            class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl transition-all shrink-0 cursor-pointer">
+                            אמת טוקן
+                        </button>
+                    </div>
+                    <p id="login-token-msg" class="hidden text-[11px] font-medium"></p>
+                </div>
+
+                <!-- Step 2: User Credentials (Enabled after token verification) -->
+                <form id="login-form" class="space-y-4">
+                    <fieldset id="login-credentials-fieldset" disabled class="space-y-4 opacity-50 transition-opacity">
+                        <div>
+                            <label for="login-username" class="block text-xs font-bold text-slate-700 mb-1.5">2. שם משתמש</label>
+                            <input type="text" id="login-username" required placeholder="הכנס שם משתמש"
+                                class="w-full bg-slate-100/80 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition-all">
+                        </div>
+
+                        <div>
+                            <label for="login-password" class="block text-xs font-bold text-slate-700 mb-1.5">סיסמה</label>
+                            <input type="password" id="login-password" required placeholder="הכנס סיסמה"
+                                class="w-full bg-slate-100/80 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-3 text-sm text-slate-800 placeholder-slate-400 outline-none transition-all">
+                        </div>
+
+                        <div id="login-error" class="hidden text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg p-2.5 text-center font-medium">
+                            שם משתמש או סיסמה שגויים, או שהמשתמש אינו פעיל.
+                        </div>
+
+                        <button type="submit"
+                            class="w-full bg-[#0265ff] hover:bg-blue-700 active:scale-[0.99] text-white font-semibold text-sm py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 mt-2 cursor-pointer">
+                            <span>התחבר למערכת</span>
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                        </button>
+                    </fieldset>
+                </form>
+
+                <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+                    <button type="button" id="quick-fill-admin"
+                        class="text-xs font-semibold text-[#0265ff] hover:text-blue-700 hover:underline transition-colors cursor-pointer">
+                        מילוי מהיר: חשבון מנהל (admin)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- VIEW 2: MAIN APPLICATION                   -->
+    <!-- ========================================== -->
+    <div id="app-view" class="hidden min-h-screen flex-col">
+        
+        <!-- Top Navigation Bar -->
+        <header class="bg-white border-b border-slate-200/80 sticky top-0 z-30">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+                
+                <!-- Right Side: Brand & User Greeting -->
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-[#0265ff] flex items-center justify-center text-white shadow-sm shrink-0">
+                        <i data-lucide="truck" class="w-5 h-5"></i>
+                    </div>
+                    <div class="leading-tight">
+                        <h1 class="font-bold text-slate-900 text-base">מערכת משלוחים</h1>
+                        <p id="user-greeting" class="text-xs text-slate-500">שלום, מנהל מערכת ראשי (מנהל מערכת)</p>
+                    </div>
+                </div>
+
+                <!-- Center Status Pill (Desktop) -->
+                <div id="header-sync-badge" class="hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/70 transition-all opacity-0">
+                    <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+                    <span id="header-sync-text">הנתונים עודכנו מ-GitHub בהצלחה</span>
+                </div>
+
+                <!-- Left Side: Action Controls -->
+                <div class="flex items-center gap-2">
+                    <button id="btn-push-github" title="שמור ודחוף שינויים אל GitHub"
+                        class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200/80 text-xs font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <i data-lucide="cloud-upload" id="push-icon" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">שמור ל-GitHub</span>
+                    </button>
+
+                    <button id="btn-sync-github" title="משוך נתונים עדכניים מ-GitHub"
+                        class="bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <i data-lucide="refresh-cw" id="sync-icon" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">משוך מ-GitHub</span>
+                    </button>
+
+                    <button id="btn-open-github-modal" title="הגדרות חיבור GitHub"
+                        class="bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <i data-lucide="git-branch" class="w-3.5 h-3.5"></i>
+                        <span class="hidden sm:inline">הגדרות GitHub</span>
+                    </button>
+
+                    <button id="btn-logout" title="התנתק מהמערכת"
+                        class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer">
+                        <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+                        <span>התנתק</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace Container -->
+        <main class="max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5 flex-1">
+            
+            <!-- Navigation Tabs & Primary CTA Bar -->
+            <div class="bg-white rounded-2xl p-2.5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-wrap items-center justify-between gap-3">
+                <!-- Right: Navigation Tabs -->
+                <div class="flex items-center gap-1.5">
+                    <button id="tab-dashboard"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all bg-blue-50 text-[#0265ff] cursor-pointer">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        <span>לוח בקרה ורשומות</span>
+                    </button>
+
+                    <button id="tab-worker-summary"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
+                        <i data-lucide="wallet" class="w-4 h-4"></i>
+                        <span>סיכום ויתרות עובדים</span>
+                    </button>
+
+                    <button id="tab-users"
+                        class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer">
+                        <i data-lucide="users" class="w-4 h-4"></i>
+                        <span>ניהול ישויות ומשתמשים</span>
+                    </button>
+                </div>
+
+                <!-- Left: Add Shift/Delivery Button -->
+                <button id="btn-add-record"
+                    class="bg-[#16a34a] hover:bg-emerald-700 active:scale-[0.99] text-white text-xs sm:text-sm font-bold px-4 py-2 rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer mr-auto sm:mr-0">
+                    <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+                    <span>הוסף משמרת / משלוחים</span>
+                </button>
+            </div>
+
+            <!-- ========================================== -->
+            <!-- TAB 1: DASHBOARD & RECORDS                 -->
+            <!-- ========================================== -->
+            <section id="section-dashboard" class="space-y-5 fade-in">
+                
+                <!-- KPI Summary Cards (4 Columns) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Card 1: Total Deliveries -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-500 mb-2">סך משלוחים</span>
+                        <div id="kpi-deliveries" class="text-2xl sm:text-3xl font-extrabold text-[#0265ff] tracking-tight">0</div>
+                    </div>
+
+                    <!-- Card 2: Total Kilometers -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-col justify-between">
+                        <span class="text-xs font-semibold text-slate-500 mb-2">סך קילומטרז'</span>
+                        <div id="kpi-km" class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">0 ק"מ</div>
+                    </div>
+
+                    <!-- Card 3: Gross Income & Tips -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500">סך הכנסות (כולל טיפים)</span>
+                            <span id="kpi-tips-sub" class="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">טיפים: ₪0</span>
+                        </div>
+                        <div id="kpi-gross" class="text-2xl sm:text-3xl font-extrabold text-slate-800 tracking-tight" dir="ltr">₪0.00</div>
+                    </div>
+
+                    <!-- Card 4: Net Income (Gross - Expenses) -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-semibold text-slate-500">נטו (הכנסות פחות הוצאות)</span>
+                            <span id="kpi-expenses-sub" class="text-[11px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">הוצאות: ₪0</span>
+                        </div>
+                        <div id="kpi-net" class="text-2xl sm:text-3xl font-extrabold text-[#16a34a] tracking-tight" dir="ltr">₪0.00</div>
+                    </div>
+                </div>
+
+                <!-- Filter Bar -->
+                <div class="bg-white rounded-2xl px-5 py-3.5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-wrap items-center gap-4">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
+                        <i data-lucide="filter" class="w-4 h-4 text-slate-400"></i>
+                        <span>סינון נתונים:</span>
+                    </div>
+
+                    <!-- Courier Filter -->
+                    <div id="filter-courier-wrapper" class="flex items-center gap-2">
+                        <label for="filter-courier" class="text-xs text-slate-500 font-medium">שליח:</label>
+                        <select id="filter-courier"
+                            class="bg-slate-100/80 border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer min-w-[140px]">
+                            <option value="all">כל השליחים</option>
+                        </select>
+                    </div>
+
+                    <!-- Date From -->
+                    <div class="flex items-center gap-2">
+                        <label for="filter-date-from" class="text-xs text-slate-500 font-medium">מתאריך:</label>
+                        <input type="date" id="filter-date-from"
+                            class="bg-slate-100/80 border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-blue-500">
+                    </div>
+
+                    <!-- Date To -->
+                    <div class="flex items-center gap-2">
+                        <label for="filter-date-to" class="text-xs text-slate-500 font-medium">עד תאריך:</label>
+                        <input type="date" id="filter-date-to"
+                            class="bg-slate-100/80 border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-blue-500">
+                    </div>
+
+                    <!-- Reset Filter Button -->
+                    <button id="btn-reset-filters" class="hidden text-xs text-blue-600 hover:underline font-semibold mr-auto cursor-pointer">
+                        נקה סינון
+                    </button>
+                </div>
+
+                <!-- Records History Table Card -->
+                <div class="bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 overflow-hidden">
+                    <!-- Table Card Header -->
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h2 class="text-sm font-bold text-slate-800">היסטוריית משלוחים ומשמרות</h2>
+                        <span id="records-count-badge" class="bg-blue-50 text-[#0265ff] text-xs font-bold px-3 py-1 rounded-full">
+                            סה"כ 0 רשומות
+                        </span>
+                    </div>
+
+                    <!-- Responsive Table -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase">
+                                    <th class="py-3.5 px-5">תאריך</th>
+                                    <th class="py-3.5 px-4">שליחים במשמרת</th>
+                                    <th class="py-3.5 px-3 text-center">משלוחים / ק"מ</th>
+                                    <th class="py-3.5 px-3 text-center">הכנסות וטיפים</th>
+                                    <th class="py-3.5 px-3 text-center">הוצאות</th>
+                                    <th class="py-3.5 px-3 text-center">נטו וחלוקה</th>
+                                    <th class="py-3.5 px-4">התחשבנות אישית (מזומן/דלק)</th>
+                                    <th class="py-3.5 px-4">הערות</th>
+                                    <th class="py-3.5 px-5 text-left">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody id="records-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                                <!-- Dynamic rows injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="records-empty-state" class="hidden py-12 text-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="package-open" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700">לא נמצאו רשומות להצגה</p>
+                        <p class="text-xs text-slate-400 mt-1">נסה לשנות את הגדרות הסינון או הוסף משמרת חדשה.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- TAB 2: WORKER BALANCES & ANALYTICS         -->
+            <!-- ========================================== -->
+            <section id="section-worker-summary" class="hidden space-y-5 fade-in">
+                
+                <!-- Worker Selector & Date Range Bar -->
+                <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#0265ff] flex items-center justify-center shrink-0">
+                            <i data-lucide="user-check" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-base font-extrabold text-slate-900">כרטיס עובד, יתרות וסטטיסטיקה</h2>
+                            <p class="text-xs text-slate-500">בחר שליח לצפייה בסך היתרה לתשלום, ביצועים ושותפים</p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        <div id="summary-worker-select-wrapper" class="flex items-center gap-2">
+                            <label for="summary-worker-select" class="text-xs font-bold text-slate-700">בחר עובד:</label>
+                            <select id="summary-worker-select"
+                                class="bg-slate-100 border border-slate-200 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold text-slate-800 outline-none focus:border-blue-500 cursor-pointer min-w-[180px]">
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <label for="summary-date-from" class="text-xs text-slate-500 font-medium">מתאריך:</label>
+                            <input type="date" id="summary-date-from"
+                                class="bg-slate-100/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-blue-500">
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <label for="summary-date-to" class="text-xs text-slate-500 font-medium">עד תאריך:</label>
+                            <input type="date" id="summary-date-to"
+                                class="bg-slate-100/80 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 outline-none focus:border-blue-500">
+                        </div>
+
+                        <button id="btn-reset-summary-dates" class="hidden text-xs text-blue-600 hover:underline font-semibold cursor-pointer">
+                            נקה תאריכים
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hero Balance Card (First & Most Prominent!) -->
+                <div class="bg-gradient-to-l from-slate-900 via-slate-800 to-blue-950 rounded-2xl p-6 sm:p-7 text-white shadow-lg border border-slate-800 relative overflow-hidden">
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+                        <div>
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-200 text-xs font-bold mb-3">
+                                <i data-lucide="coins" class="w-3.5 h-3.5"></i>
+                                <span id="summary-worker-badge">סיכום כספי לעובד</span>
+                            </div>
+                            <p class="text-xs sm:text-sm text-slate-300 font-medium">סך היתרה שעוד נותר לשלם לעובד</p>
+                            <div id="summary-total-balance" class="text-4xl sm:text-5xl font-extrabold tracking-tight mt-1 text-emerald-400" dir="ltr">
+                                ₪0.00
+                            </div>
+                            <p id="summary-balance-formula-hint" class="text-[11px] text-slate-400 mt-2">
+                                מחושב לפי: חלקו ברווחי המשמרות + החזרי דלק שהוציא - מזומן שכבר לקח
+                            </p>
+                        </div>
+
+                        <!-- Financial Breakdown Pills -->
+                        <div class="grid grid-cols-3 gap-3 sm:gap-4 bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-4 min-w-[280px]">
+                            <div class="text-center">
+                                <span class="block text-[11px] text-slate-400 mb-1">חלקו נטו ממשמרות</span>
+                                <span id="summary-earned-share" class="text-sm sm:text-base font-extrabold text-white" dir="ltr">₪0.00</span>
+                            </div>
+                            <div class="text-center border-x border-white/10 px-2">
+                                <span class="block text-[11px] text-slate-400 mb-1">דלק שהוציא (+)</span>
+                                <span id="summary-fuel-spent" class="text-sm sm:text-base font-extrabold text-blue-300" dir="ltr">₪0.00</span>
+                            </div>
+                            <div class="text-center">
+                                <span class="block text-[11px] text-slate-400 mb-1">מזומן שלקח (-)</span>
+                                <span id="summary-cash-taken" class="text-sm sm:text-base font-extrabold text-amber-300" dir="ltr">₪0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4 Worker KPIs Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- KPI 1: Shifts Count -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-blue-50 text-[#0265ff] flex items-center justify-center shrink-0">
+                            <i data-lucide="calendar-check" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-500">כמות משמרות</span>
+                            <div id="summary-shifts-count" class="text-2xl font-extrabold text-slate-900 mt-0.5">0</div>
+                        </div>
+                    </div>
+
+                    <!-- KPI 2: Deliveries Count -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="package" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-500">סך משלוחים</span>
+                            <div id="summary-deliveries-count" class="text-2xl font-extrabold text-slate-900 mt-0.5">0</div>
+                            <span id="summary-deliveries-sub" class="text-[11px] text-slate-400">סה"כ במשמרות שביצע</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 3: Kilometers -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="navigation" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <span class="block text-xs font-semibold text-slate-500">קילומטרז' שנסע</span>
+                            <div id="summary-km-count" class="text-2xl font-extrabold text-slate-900 mt-0.5">0 ק"מ</div>
+                            <span id="summary-km-sub" class="text-[11px] text-slate-400">סה"כ במשמרותיו</span>
+                        </div>
+                    </div>
+
+                    <!-- KPI 4: Top Co-Worker Partner -->
+                    <div class="bg-white rounded-2xl p-5 shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                            <i data-lucide="users-round" class="w-6 h-6"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <span class="block text-xs font-semibold text-slate-500">השותף המוביל במשמרות</span>
+                            <div id="summary-top-partner" class="text-lg font-extrabold text-slate-900 mt-0.5 truncate">אין עדיין</div>
+                            <span id="summary-top-partner-count" class="text-[11px] text-purple-600 font-semibold">עבד לבד בכל המשמרות</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Worker Shift Breakdown Table -->
+                <div class="bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 overflow-hidden">
+                    <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-slate-800">פירוט משמרות והתחשבנות לעובד</h3>
+                        <span id="summary-table-badge" class="bg-blue-50 text-[#0265ff] text-xs font-bold px-3 py-1 rounded-full">0 משמרות</span>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-100 text-[11px] font-bold text-slate-500">
+                                    <th class="py-3.5 px-5">תאריך</th>
+                                    <th class="py-3.5 px-4">עבד עם</th>
+                                    <th class="py-3.5 px-3 text-center">משלוחים / ק"מ במשמרת</th>
+                                    <th class="py-3.5 px-3 text-center">חלקו מהמשמרת</th>
+                                    <th class="py-3.5 px-3 text-center">דלק שהוציא (+)</th>
+                                    <th class="py-3.5 px-3 text-center">מזומן שלקח (-)</th>
+                                    <th class="py-3.5 px-5 text-left">יתרה ממשמרת זו</th>
+                                </tr>
+                            </thead>
+                            <tbody id="summary-shifts-tbody" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                                <!-- Dynamic worker shift breakdown injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="summary-empty-state" class="hidden py-12 text-center">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                            <i data-lucide="calendar-off" class="w-6 h-6"></i>
+                        </div>
+                        <p class="text-sm font-semibold text-slate-700">אין משמרות רשומות לעובד זה בטווח שנבחר</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ========================================== -->
+            <!-- TAB 3: USERS & ENTITIES MANAGEMENT         -->
+            <!-- ========================================== -->
+            <section id="section-users" class="hidden space-y-5 fade-in">
+                <!-- Section Header -->
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-900">ניהול משתמשים ושליחים</h2>
+                        <p class="text-xs text-slate-500 mt-0.5">הוספה, עריכה והגדרת הרשאות למשתמשי המערכת</p>
+                    </div>
+
+                    <button id="btn-add-user"
+                        class="bg-[#0265ff] hover:bg-blue-700 active:scale-[0.99] text-white text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl shadow-sm flex items-center gap-1.5 transition-all cursor-pointer">
+                        <i data-lucide="plus" class="w-4 h-4 stroke-[2.5]"></i>
+                        <span>הוסף משתמש חדש</span>
+                    </button>
+                </div>
+
+                <!-- Users Table Card -->
+                <div class="bg-white rounded-2xl shadow-[0_2px_10px_rgb(0,0,0,0.03)] border border-slate-200/60 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/70 border-b border-slate-100 text-[11px] font-bold text-slate-500">
+                                    <th class="py-3.5 px-6">שם מלא</th>
+                                    <th class="py-3.5 px-4">שם משתמש</th>
+                                    <th class="py-3.5 px-4 text-center">תפקיד</th>
+                                    <th class="py-3.5 px-4 text-center">סוג כלי רכב</th>
+                                    <th class="py-3.5 px-4 text-center">טלפון</th>
+                                    <th class="py-3.5 px-4 text-center">סטטוס</th>
+                                    <th class="py-3.5 px-6 text-left">פעולות</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-table-body" class="divide-y divide-slate-100 text-xs sm:text-sm">
+                                <!-- Dynamic users injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 1: ADD / EDIT SHIFT RECORD           -->
+    <!-- ========================================== -->
+    <div id="modal-record" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 hidden items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-2xl p-6 my-auto fade-in max-h-[92vh] overflow-y-auto">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                        <i data-lucide="clipboard-list" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-record-title" class="text-base font-bold text-slate-900">הוסף משמרת / משלוחים</h3>
+                        <p class="text-[11px] text-slate-500">הזן נתוני משמרת, הוצאות, טיפים, שותפים והתחשבנות</p>
+                    </div>
+                </div>
+                <button type="button" class="close-modal text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-record" class="space-y-4">
+                <input type="hidden" id="record-id">
+
+                <!-- Row 1: Date, Deliveries, KM -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="record-date" class="block text-xs font-bold text-slate-700 mb-1">תאריך משמרת</label>
+                        <input type="date" id="record-date" required
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none">
+                    </div>
+
+                    <div>
+                        <label for="record-deliveries" class="block text-xs font-bold text-slate-700 mb-1">כמות משלוחים</label>
+                        <input type="number" id="record-deliveries" min="0" step="1" required placeholder="0"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none text-center">
+                    </div>
+
+                    <div>
+                        <label for="record-km" class="block text-xs font-bold text-slate-700 mb-1">קילומטרז' (ק"מ)</label>
+                        <input type="number" id="record-km" min="0" step="0.1" required placeholder="0.0"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none text-center">
+                    </div>
+                </div>
+
+                <!-- Row 2: Base Income, Tips, Shift Expenses -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label for="record-income" class="block text-xs font-bold text-slate-700 mb-1">הכנסות משלוחים (₪)</label>
+                        <input type="number" id="record-income" min="0" step="0.01" required placeholder="0.00"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 outline-none text-center">
+                    </div>
+
+                    <div>
+                        <label for="record-tips" class="block text-xs font-bold text-slate-700 mb-1">טיפים (₪)</label>
+                        <input type="number" id="record-tips" min="0" step="0.01" placeholder="0.00"
+                            class="w-full bg-amber-50/70 border border-amber-200/70 focus:border-amber-500 focus:bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-amber-700 outline-none text-center">
+                    </div>
+
+                    <div>
+                        <label for="record-expenses" class="block text-xs font-bold text-slate-700 mb-1">הוצאות משמרת כלליות (₪)</label>
+                        <input type="number" id="record-expenses" min="0" step="0.01" placeholder="0.00"
+                            class="w-full bg-red-50/70 border border-red-200/70 focus:border-red-500 focus:bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-red-700 outline-none text-center">
+                    </div>
+                </div>
+
+                <!-- Row 3: Multi-Courier Selection & Worker Count -->
+                <div class="bg-slate-50/90 border border-slate-200/70 rounded-xl p-3.5 space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-800">שליחים שעבדו במשמרת</label>
+                            <p class="text-[11px] text-slate-500">בחר שליח אחד או יותר שעבדו יחד במשמרת</p>
+                        </div>
+                        <div class="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200/80">
+                            <label for="record-workers-count" class="text-xs font-bold text-slate-700">מס' עובדים לחלוקה:</label>
+                            <input type="number" id="record-workers-count" min="1" max="10" step="1" value="1"
+                                class="w-12 bg-slate-100 rounded-md px-1.5 py-0.5 text-xs font-extrabold text-[#0265ff] text-center outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Multi-select checkboxes container -->
+                    <div id="record-couriers-checkboxes" class="flex flex-wrap gap-2">
+                        <!-- Dynamic courier pills injected here -->
+                    </div>
+                </div>
+
+                <!-- Row 4: Per-Courier Settlements (Cash taken / Fuel spent during shift) -->
+                <div id="record-settlements-section" class="bg-blue-50/40 border border-blue-100 rounded-xl p-3.5 space-y-2.5">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                            <i data-lucide="wallet" class="w-3.5 h-3.5 text-[#0265ff]"></i>
+                            <span>התחשבנות אישית במשמרת (מזומן שנלקח / הוצאות דלק)</span>
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500">הזן אם שליח לקח מזומן בסוף המשמרת או שילם מכיסו על דלק/הוצאה:</p>
+                    <div id="record-settlements-list" class="space-y-2">
+                        <!-- Dynamic rows per selected courier -->
+                    </div>
+                </div>
+
+                <!-- Live Financial Summary Box -->
+                <div class="bg-slate-900 text-white rounded-xl p-4 grid grid-cols-3 gap-3 text-center">
+                    <div>
+                        <span class="block text-[11px] text-slate-400">סך הכנסות + טיפים</span>
+                        <span id="preview-gross" class="text-sm sm:text-base font-extrabold text-white" dir="ltr">₪0.00</span>
+                    </div>
+                    <div class="border-x border-slate-700/80">
+                        <span class="block text-[11px] text-slate-400">נטו (פחות הוצאות)</span>
+                        <span id="preview-net" class="text-sm sm:text-base font-extrabold text-emerald-400" dir="ltr">₪0.00</span>
+                    </div>
+                    <div>
+                        <span class="block text-[11px] text-slate-400">חלק לכל עובד (<span id="preview-workers-label">1</span>)</span>
+                        <span id="preview-per-worker" class="text-sm sm:text-base font-extrabold text-blue-400" dir="ltr">₪0.00</span>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="record-notes" class="block text-xs font-bold text-slate-700 mb-1">הערות (אופציונלי)</label>
+                    <input type="text" id="record-notes" placeholder="לדוגמה: משמרת ערב משותפת, פירוט הוצאות..."
+                        class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs text-slate-800 outline-none">
+                </div>
+
+                <div class="flex items-center gap-3 pt-1">
+                    <button type="submit"
+                        class="flex-1 bg-[#16a34a] hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm transition-all cursor-pointer">
+                        שמור רשומה
+                    </button>
+                    <button type="button"
+                        class="close-modal flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-all cursor-pointer">
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 2: ADD / EDIT USER                   -->
+    <!-- ========================================== -->
+    <div id="modal-user" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-md p-6 fade-in">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-blue-50 text-[#0265ff] flex items-center justify-center">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 id="modal-user-title" class="text-base font-bold text-slate-900">הוסף משתמש חדש</h3>
+                        <p class="text-[11px] text-slate-500">הגדרת פרטי שליח או מנהל מערכת</p>
+                    </div>
+                </div>
+                <button type="button" class="close-modal text-slate-400 hover:text-slate-600 p-1 cursor-pointer">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="form-user" class="space-y-3.5">
+                <input type="hidden" id="user-edit-original-username">
+
+                <div>
+                    <label for="user-fullname" class="block text-xs font-bold text-slate-700 mb-1">שם מלא</label>
+                    <input type="text" id="user-fullname" required placeholder="לדוגמה: ישראל ישראלי"
+                        class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="user-username" class="block text-xs font-bold text-slate-700 mb-1">שם משתמש (באנגלית)</label>
+                        <input type="text" id="user-username" required placeholder="username" dir="ltr"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none text-left">
+                    </div>
+
+                    <div>
+                        <label for="user-password" class="block text-xs font-bold text-slate-700 mb-1">סיסמה</label>
+                        <input type="text" id="user-password" required placeholder="סיסמה להתחברות" dir="ltr"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none text-left">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="user-role" class="block text-xs font-bold text-slate-700 mb-1">תפקיד</label>
+                        <select id="user-role"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="courier">שליח</option>
+                            <option value="admin">מנהל</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="user-vehicle" class="block text-xs font-bold text-slate-700 mb-1">סוג כלי רכב</label>
+                        <select id="user-vehicle"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="רכב">רכב</option>
+                            <option value="אופנוע">אופנוע</option>
+                            <option value="אופניים חשמליים">אופניים חשמליים</option>
+                            <option value="קורקינט">קורקינט</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="user-phone" class="block text-xs font-bold text-slate-700 mb-1">טלפון</label>
+                        <input type="tel" id="user-phone" required placeholder="050-0000000" dir="ltr"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3.5 py-2.5 text-xs font-medium text-slate-800 outline-none text-left">
+                    </div>
+
+                    <div>
+                        <label for="user-status" class="block text-xs font-bold text-slate-700 mb-1">סטטוס</label>
+                        <select id="user-status"
+                            class="w-full bg-slate-100 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-3 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer">
+                            <option value="active">פעיל</option>
+                            <option value="inactive">לא פעיל</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit"
+                        class="flex-1 bg-[#0265ff] hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm transition-all cursor-pointer">
+                        שמור משתמש
+                    </button>
+                    <button type="button"
+                        class="close-modal flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-all cursor-pointer">
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 3: GITHUB REST API SETTINGS          -->
+    <!-- ========================================== -->
+    <div id="modal-github" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-40 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-[460px] p-6 fade-in">
+            <!-- Header matching screenshot -->
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-[#0265ff] flex items-center justify-center shrink-0">
+                        <i data-lucide="git-branch" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-900 leading-tight">חיבור ל-GitHub REST API</h3>
+                        <p class="text-[11px] text-slate-400 mt-0.5">שמירה וסנכרון ישיר מול הריפוזיטורי שלך</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="form-github" class="space-y-4">
+                <div>
+                    <label for="gh-owner" class="block text-xs font-bold text-slate-700 mb-1.5">שם משתמש / ארגון (Owner)</label>
+                    <input type="text" id="gh-owner" placeholder="aviv-cyber" dir="ltr"
+                        class="w-full bg-slate-100/90 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 outline-none text-left">
+                </div>
+
+                <div>
+                    <label for="gh-repo" class="block text-xs font-bold text-slate-700 mb-1.5">שם הריפוזיטורי (Repo)</label>
+                    <input type="text" id="gh-repo" placeholder="mishlow" dir="ltr"
+                        class="w-full bg-slate-100/90 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 outline-none text-left">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="gh-branch" class="block text-xs font-bold text-slate-700 mb-1.5">ענף (Branch)</label>
+                        <input type="text" id="gh-branch" placeholder="main" dir="ltr"
+                            class="w-full bg-slate-100/90 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 outline-none text-left">
+                    </div>
+
+                    <div>
+                        <label for="gh-path" class="block text-xs font-bold text-slate-700 mb-1.5">נתיב לקובץ (Path)</label>
+                        <input type="text" id="gh-path" placeholder="data.json" dir="ltr"
+                            class="w-full bg-slate-100/90 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 outline-none text-left">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="gh-token" class="block text-xs font-bold text-slate-700 mb-1.5">Personal Access Token</label>
+                    <input type="password" id="gh-token" placeholder="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" dir="ltr"
+                        class="w-full bg-slate-100/90 border border-transparent focus:border-blue-500 focus:bg-white rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 outline-none text-left tracking-widest">
+                    <p class="text-[11px] text-slate-400 mt-1.5">נדרשת הרשאת Contents: Read & Write בהגדרות GitHub.</p>
+                </div>
+
+                <div class="flex items-center gap-3 pt-2">
+                    <button type="submit"
+                        class="flex-1 bg-[#0265ff] hover:bg-blue-700 text-white font-bold text-xs py-3 rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer">
+                        שמור וסנכרן
+                    </button>
+                    <button type="button"
+                        class="close-modal flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-3 rounded-xl transition-all cursor-pointer">
+                        ביטול
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- MODAL 4: CONFIRMATION DIALOG (NO alert())  -->
+    <!-- ========================================== -->
+    <div id="modal-confirm" class="fixed inset-0 bg-slate-900/40 backdrop-blur-[2px] z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-100 w-full max-w-sm p-6 text-center fade-in">
+            <div class="w-12 h-12 rounded-full bg-red-50 text-red-600 flex items-center justify-center mx-auto mb-3">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <h3 id="confirm-title" class="text-base font-bold text-slate-900">אישור מחיקה</h3>
+            <p id="confirm-message" class="text-xs text-slate-500 mt-1.5 mb-5">האם אתה בטוח שברצונך למחוק פריט זה? פעולה זו אינה הפיכה.</p>
+            <div class="flex items-center gap-3">
+                <button id="btn-confirm-yes"
+                    class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer">
+                    כן, מחק
+                </button>
+                <button id="btn-confirm-no"
+                    class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2.5 rounded-xl transition-all cursor-pointer">
+                    ביטול
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- APPLICATION LOGIC & STATE MANAGEMENT       -->
+    <!-- ========================================== -->
+    <script>
+        /**
+         * DeliveryPulse Application State & Storage Keys
+         */
+        const STORAGE_KEYS = {
+            DATA: 'deliverypulse_data_v1',
+            GITHUB: 'deliverypulse_github_cfg_v1',
+            SESSION: 'deliverypulse_session_v1'
+        };
+
+        // Default initial seed data matching the screenshots
+        const DEFAULT_DATA = {
+            users: [
+                {
+                    fullName: 'מנהל מערכת ראשי',
+                    username: 'admin',
+                    password: '123',
+                    role: 'admin',
+                    vehicle: 'רכב',
+                    phone: '050-0000000',
+                    status: 'active'
+                },
+                {
+                    fullName: 'הארי פוטר',
+                    username: 'harry',
+                    password: '123',
+                    role: 'courier',
+                    vehicle: 'רכב',
+                    phone: '0500000001',
+                    status: 'active'
+                },
+                {
+                    fullName: 'ראובן עטר',
+                    username: 'atar',
+                    password: '123',
+                    role: 'courier',
+                    vehicle: 'אופנוע',
+                    phone: '0502900899',
+                    status: 'active'
+                }
+            ],
+            records: [
+                {
+                    id: 'rec-101',
+                    date: '2026-11-16',
+                    couriers: ['admin'],
+                    workersCount: 1,
+                    deliveries: 13,
+                    km: 69.3,
+                    income: 330.00,
+                    tips: 35.00,
+                    expenses: 20.00,
+                    settlements: {
+                        admin: { cashTaken: 50, fuelSpent: 0 }
+                    },
+                    notes: ''
+                },
+                {
+                    id: 'rec-102',
+                    date: '2026-11-12',
+                    couriers: ['harry', 'atar'],
+                    workersCount: 2,
+                    deliveries: 18,
+                    km: 84.0,
+                    income: 420.00,
+                    tips: 60.00,
+                    expenses: 40.00,
+                    settlements: {
+                        harry: { cashTaken: 100, fuelSpent: 40 },
+                        atar: { cashTaken: 0, fuelSpent: 0 }
+                    },
+                    notes: 'משמרת משותפת'
+                },
+                {
+                    id: 'rec-103',
+                    date: '2026-11-11',
+                    couriers: ['admin'],
+                    workersCount: 1,
+                    deliveries: 19,
+                    km: 104,
+                    income: 417.00,
+                    tips: 0,
+                    expenses: 0,
+                    settlements: {},
+                    notes: ''
+                }
+            ]
+        };
+
+        const DEFAULT_GITHUB_CONFIG = {
+            owner: 'aviv-cyber',
+            repo: 'mishlow',
+            branch: 'main',
+            path: 'data.json',
+            token: ''
+        };
+
+        // Runtime State
+        let appData = loadAppData();
+        let githubConfig = loadGithubConfig();
+        let currentUser = loadSession();
+        let currentTab = 'dashboard';
+        let pendingConfirmCallback = null;
+
+        // ==========================================
+        // STORAGE & HELPER FUNCTIONS
+        // ==========================================
+
+        function normalizeRecord(rec) {
+            // Backward compatibility with single courierUsername records
+            const couriers = Array.isArray(rec.couriers) && rec.couriers.length > 0
+                ? rec.couriers
+                : (rec.courierUsername ? [rec.courierUsername] : ['admin']);
+
+            const workersCount = Math.max(1, parseInt(rec.workersCount, 10) || couriers.length || 1);
+            const income = Number(rec.income) || 0;
+            const tips = Number(rec.tips) || 0;
+            const expenses = Number(rec.expenses) || 0;
+            const settlements = (rec.settlements && typeof rec.settlements === 'object') ? rec.settlements : {};
+
+            return {
+                ...rec,
+                couriers,
+                courierUsername: couriers[0],
+                workersCount,
+                deliveries: Number(rec.deliveries) || 0,
+                km: Number(rec.km) || 0,
+                income,
+                tips,
+                expenses,
+                settlements,
+                notes: rec.notes || ''
+            };
+        }
+
+        function loadAppData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.DATA);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (parsed && Array.isArray(parsed.users) && Array.isArray(parsed.records)) {
+                        return {
+                            users: parsed.users,
+                            records: parsed.records.map(normalizeRecord)
+                        };
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading local data:', e);
+            }
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+
+        function saveAppDataLocal() {
+            try {
+                localStorage.setItem(STORAGE_KEYS.DATA, JSON.stringify(appData));
+            } catch (e) {
+                console.error('Error saving local data:', e);
+            }
+        }
+
+        function loadGithubConfig() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEYS.GITHUB);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    // Never load or persist token from storage
+                    return {
+                        owner: parsed.owner || DEFAULT_GITHUB_CONFIG.owner,
+                        repo: parsed.repo || DEFAULT_GITHUB_CONFIG.repo,
+                        branch: parsed.branch || DEFAULT_GITHUB_CONFIG.branch,
+                        path: parsed.path || DEFAULT_GITHUB_CONFIG.path,
+                        token: ''
+                    };
+                }
+            } catch (e) {}
+            return { ...DEFAULT_GITHUB_CONFIG, token: '' };
+        }
+
+        function saveGithubConfig(cfg) {
+            // Keep token strictly in runtime memory (never in localStorage)
+            githubConfig = { ...cfg };
+            const safeStorageCopy = {
+                owner: cfg.owner,
+                repo: cfg.repo,
+                branch: cfg.branch,
+                path: cfg.path
+            };
+            localStorage.setItem(STORAGE_KEYS.GITHUB, JSON.stringify(safeStorageCopy));
+        }
+
+        function loadSession() {
+            try {
+                // Only restore session if a token exists in active memory
+                if (!githubConfig.token) return null;
+                const username = localStorage.getItem(STORAGE_KEYS.SESSION);
+                if (username) {
+                    const found = appData.users.find(u => u.username === username && u.status === 'active');
+                    if (found) return found;
+                }
+            } catch (e) {}
+            return null;
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-600 text-white shadow-emerald-600/20',
+                error: 'bg-red-600 text-white shadow-red-600/20',
+                info: 'bg-slate-800 text-white shadow-slate-800/20'
+            };
+            const icons = {
+                success: 'check-circle-2',
+                error: 'alert-circle',
+                info: 'info'
+            };
+
+            toast.className = `${colors[type] || colors.info} px-4 py-2.5 rounded-full shadow-lg text-xs font-bold flex items-center gap-2 pointer-events-auto fade-in`;
+            toast.innerHTML = `<i data-lucide="${icons[type]}" class="w-4 h-4 shrink-0"></i><span>${message}</span>`;
+            container.appendChild(toast);
+            lucide.createIcons({ root: toast });
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function showHeaderSyncStatus(text, isSuccess = true) {
+            const badge = document.getElementById('header-sync-badge');
+            const label = document.getElementById('header-sync-text');
+            if (!badge || !label) return;
+
+            label.textContent = text;
+            badge.className = isSuccess
+                ? 'hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200/70 transition-all opacity-100'
+                : 'hidden md:flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200/70 transition-all opacity-100';
+        }
+
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-message').textContent = message;
+            pendingConfirmCallback = onConfirm;
+            const modal = document.getElementById('modal-confirm');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeAllModals() {
+            document.querySelectorAll('#modal-record, #modal-user, #modal-github, #modal-confirm').forEach(m => {
+                m.classList.add('hidden');
+                m.classList.remove('flex');
+            });
+            pendingConfirmCallback = null;
+        }
+
+        // ==========================================
+        // GITHUB REST API SYNCHRONIZATION
+        // ==========================================
+
+        // UTF-8 Safe Base64 Encoding & Decoding
+        function utf8ToBase64(str) {
+            const bytes = new TextEncoder().encode(str);
+            let binString = '';
+            bytes.forEach((b) => { binString += String.fromCharCode(b); });
+            return btoa(binString);
+        }
+
+        function base64ToUtf8(base64) {
+            const binString = atob(base64.replace(/\s/g, ''));
+            const bytes = Uint8Array.from(binString, (m) => m.codePointAt(0));
+            return new TextDecoder().decode(bytes);
+        }
+
+        async function pullFromGitHub(silent = false) {
+            if (!githubConfig.owner || !githubConfig.repo || !githubConfig.token) {
+                if (!silent) showToast('נא להגדיר פרטי GitHub ו-Token תחילה', 'info');
+                return false;
+            }
+
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            try {
+                const url = `https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}/contents/${githubConfig.path}?ref=${encodeURIComponent(githubConfig.branch || 'main')}&t=${Date.now()}`;
+                const res = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${githubConfig.token}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+
+                if (res.status === 404) {
+                    // File doesn't exist yet in repo -> push current local data to initialize it
+                    await pushToGitHub(true);
+                    showHeaderSyncStatus('קובץ נתונים נוצר וסונכרן מול GitHub');
+                    if (!silent) showToast('הקובץ נוצר וסונכרן מול GitHub בהצלחה');
+                    return true;
+                }
+
+                if (!res.ok) {
+                    throw new Error(`GitHub API Error (${res.status})`);
+                }
+
+                const fileData = await res.json();
+                const decodedContent = base64ToUtf8(fileData.content || '').trim();
+
+                // If the file in GitHub is empty, initialize it with current local data
+                if (!decodedContent) {
+                    await pushToGitHub(true);
+                    showHeaderSyncStatus('קובץ הנתונים אותחל וסונכרן מול GitHub');
+                    if (!silent) showToast('קובץ הנתונים אותחל בהצלחה מול GitHub');
+                    return true;
+                }
+
+                let remoteJson = null;
+                try {
+                    remoteJson = JSON.parse(decodedContent);
+                } catch (parseErr) {
+                    // If existing JSON is invalid/corrupted, overwrite with valid local data
+                    await pushToGitHub(true);
+                    showHeaderSyncStatus('הנתונים תוקנו וסונכרנו מול GitHub');
+                    if (!silent) showToast('הנתונים תוקנו וסונכרנו מול GitHub');
+                    return true;
+                }
+
+                if (remoteJson && typeof remoteJson === 'object' && !Array.isArray(remoteJson)) {
+                    // Normalize structure if either users or records array is missing
+                    const normalizedUsers = Array.isArray(remoteJson.users) && remoteJson.users.length > 0
+                        ? remoteJson.users
+                        : appData.users;
+                    const normalizedRecords = Array.isArray(remoteJson.records)
+                        ? remoteJson.records
+                        : (Array.isArray(remoteJson.shifts) ? remoteJson.shifts : appData.records);
+
+                    const needsSchemaUpgrade = !Array.isArray(remoteJson.users) || !Array.isArray(remoteJson.records);
+
+                    appData = {
+                        users: normalizedUsers,
+                        records: normalizedRecords.map(normalizeRecord)
+                    };
+                    saveAppDataLocal();
+                    refreshAllUI();
+
+                    if (needsSchemaUpgrade) {
+                        await pushToGitHub(true);
+                    }
+
+                    showHeaderSyncStatus('הנתונים עודכנו מ-GitHub בהצלחה');
+                    if (!silent) showToast('הנתונים עודכנו מ-GitHub בהצלחה');
+                    return true;
+                } else {
+                    await pushToGitHub(true);
+                    showHeaderSyncStatus('הנתונים עודכנו וסונכרנו מול GitHub');
+                    if (!silent) showToast('הנתונים עודכנו וסונכרנו מול GitHub');
+                    return true;
+                }
+            } catch (err) {
+                console.error('GitHub Pull Error:', err);
+                showHeaderSyncStatus('שגיאה בסנכרון מול GitHub', false);
+                if (!silent) showToast(`שגיאת סנכרון: ${err.message}`, 'error');
+                return false;
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+            }
+        }
+
+        async function pushToGitHub(silent = false) {
+            saveAppDataLocal();
+            if (!githubConfig.owner || !githubConfig.repo || !githubConfig.token) {
+                if (!silent) showToast('נא להגדיר פרטי GitHub ו-Token תחילה בהגדרות', 'info');
+                return false;
+            }
+
+            const pushIcon = document.getElementById('push-icon');
+            if (pushIcon) pushIcon.classList.add('animate-pulse');
+
+            try {
+                const apiUrl = `https://api.github.com/repos/${encodeURIComponent(githubConfig.owner)}/${encodeURIComponent(githubConfig.repo)}/contents/${githubConfig.path}`;
+                let sha = null;
+
+                // Fetch current file SHA if it exists
+                const getRes = await fetch(`${apiUrl}?ref=${encodeURIComponent(githubConfig.branch || 'main')}&t=${Date.now()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${githubConfig.token}`,
+                        'Accept': 'application/vnd.github+json'
+                    }
+                });
+
+                if (getRes.ok) {
+                    const existing = await getRes.json();
+                    sha = existing.sha;
+                }
+
+                const contentBase64 = utf8ToBase64(JSON.stringify(appData, null, 2));
+                const body = {
+                    message: `Update DeliveryPulse data (${new Date().toISOString()})`,
+                    content: contentBase64,
+                    branch: githubConfig.branch || 'main'
+                };
+                if (sha) body.sha = sha;
+
+                const putRes = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${githubConfig.token}`,
+                        'Accept': 'application/vnd.github+json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!putRes.ok) {
+                    const errBody = await putRes.json().catch(() => ({}));
+                    throw new Error(errBody.message || `GitHub API Error (${putRes.status})`);
+                }
+
+                showHeaderSyncStatus('הנתונים נשמרו ל-GitHub בהצלחה');
+                if (!silent) showToast('הנתונים נשמרו ל-GitHub בהצלחה');
+                return true;
+            } catch (err) {
+                console.error('GitHub Push Error:', err);
+                showHeaderSyncStatus('שמירה מקומית בלבד (שגיאת GitHub)', false);
+                if (!silent) showToast(`השמירה ל-GitHub נכשלה: ${err.message}`, 'error');
+                return false;
+            } finally {
+                if (pushIcon) pushIcon.classList.remove('animate-pulse');
+            }
+        }
+
+        // ==========================================
+        // UI RENDERING & CALCULATIONS
+        // ==========================================
+
+        function escapeHtml(str) {
+            return String(str ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatCurrency(num) {
+            const val = Number(num) || 0;
+            return `₪${val.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function getUserDisplayName(username) {
+            const u = appData.users.find(item => item.username === username);
+            return u ? u.fullName : username;
+        }
+
+        function populateCourierFilter() {
+            const select = document.getElementById('filter-courier');
+            if (!select) return;
+            const prevVal = select.value;
+            select.innerHTML = '<option value="all">כל השליחים</option>';
+            appData.users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.username;
+                opt.textContent = u.fullName;
+                select.appendChild(opt);
+            });
+            if ([...select.options].some(o => o.value === prevVal)) {
+                select.value = prevVal;
+            }
+
+            // Also populate the worker summary selector
+            const summarySelect = document.getElementById('summary-worker-select');
+            if (summarySelect) {
+                const prevSummaryVal = summarySelect.value;
+                summarySelect.innerHTML = '';
+                appData.users.forEach(u => {
+                    const opt = document.createElement('option');
+                    opt.value = u.username;
+                    opt.textContent = `${u.fullName} (${u.username})`;
+                    summarySelect.appendChild(opt);
+                });
+
+                if (currentUser && currentUser.role !== 'admin') {
+                    summarySelect.value = currentUser.username;
+                    summarySelect.disabled = true;
+                } else {
+                    summarySelect.disabled = false;
+                    if ([...summarySelect.options].some(o => o.value === prevSummaryVal)) {
+                        summarySelect.value = prevSummaryVal;
+                    } else if (appData.users.length > 0) {
+                        const firstCourier = appData.users.find(u => u.role === 'courier') || appData.users[0];
+                        summarySelect.value = firstCourier.username;
+                    }
+                }
+            }
+        }
+// ... existing code ... -->
+        function refreshAllUI() {
+            populateCourierFilter();
+            renderDashboard();
+            renderWorkerSummary();
+            renderUsersTable();
+        }
+
+        function renderWorkerSummary() {
+            const select = document.getElementById('summary-worker-select');
+            if (!select || !select.value) return;
+
+            const selectedUsername = select.value;
+            const workerObj = appData.users.find(u => u.username === selectedUsername);
+            const dateFrom = document.getElementById('summary-date-from')?.value || '';
+            const dateTo = document.getElementById('summary-date-to')?.value || '';
+
+            const resetDatesBtn = document.getElementById('btn-reset-summary-dates');
+            if (resetDatesBtn) {
+                if (dateFrom || dateTo) resetDatesBtn.classList.remove('hidden');
+                else resetDatesBtn.classList.add('hidden');
+            }
+
+            const workerShifts = appData.records
+                .map(normalizeRecord)
+                .filter(rec => {
+                    if (!rec.couriers.includes(selectedUsername)) return false;
+                    if (dateFrom && rec.date < dateFrom) return false;
+                    if (dateTo && rec.date > dateTo) return false;
+                    return true;
+                })
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            let totalBalance = 0;
+            let totalEarnedShare = 0;
+            let totalFuelSpent = 0;
+            let totalCashTaken = 0;
+            let totalShiftDeliveries = 0;
+            let totalShiftKm = 0;
+            const partnerCounts = {};
+
+            const tbody = document.getElementById('summary-shifts-tbody');
+            const emptyState = document.getElementById('summary-empty-state');
+            if (tbody) tbody.innerHTML = '';
+
+            workerShifts.forEach(rec => {
+                const gross = rec.income + rec.tips;
+                const net = gross - rec.expenses;
+                const workersCount = Math.max(1, rec.workersCount || rec.couriers.length || 1);
+                const sharePerWorker = net / workersCount;
+
+                const st = rec.settlements[selectedUsername] || { cashTaken: 0, fuelSpent: 0 };
+                const cash = Number(st.cashTaken) || 0;
+                const fuel = Number(st.fuelSpent) || 0;
+                const shiftBalance = sharePerWorker - cash + fuel;
+
+                totalEarnedShare += sharePerWorker;
+                totalFuelSpent += fuel;
+                totalCashTaken += cash;
+                totalBalance += shiftBalance;
+
+                totalShiftDeliveries += rec.deliveries;
+                totalShiftKm += rec.km;
+
+                // Count co-workers
+                const coWorkers = rec.couriers.filter(c => c !== selectedUsername);
+                coWorkers.forEach(partnerUsername => {
+                    partnerCounts[partnerUsername] = (partnerCounts[partnerUsername] || 0) + 1;
+                });
+
+                if (tbody) {
+                    const partnersHtml = coWorkers.length > 0
+                        ? coWorkers.map(p => `<span class="inline-block px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-100">${escapeHtml(getUserDisplayName(p))}</span>`).join(' ')
+                        : '<span class="text-xs text-slate-400">עבד לבד</span>';
+
+                    const balBadgeClass = shiftBalance >= 0
+                        ? 'text-emerald-700 bg-emerald-50 border-emerald-200/70'
+                        : 'text-red-700 bg-red-50 border-red-200/70';
+
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50/80 transition-colors';
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-5 font-semibold text-slate-800 whitespace-nowrap">${escapeHtml(rec.date)}</td>
+                        <td class="py-3.5 px-4">${partnersHtml}</td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                            <div class="font-bold text-slate-800">${rec.deliveries} משלוחים</div>
+                            <div class="text-[11px] text-slate-500">${rec.km} ק"מ (חלוקה ל-${workersCount})</div>
+                        </td>
+                        <td class="py-3.5 px-3 text-center font-bold text-[#0265ff] whitespace-nowrap" dir="ltr">
+                            ${formatCurrency(sharePerWorker)}
+                        </td>
+                        <td class="py-3.5 px-3 text-center font-semibold text-slate-700 whitespace-nowrap" dir="ltr">
+                            ${fuel > 0 ? `+${formatCurrency(fuel)}` : '₪0.00'}
+                        </td>
+                        <td class="py-3.5 px-3 text-center font-semibold text-amber-700 whitespace-nowrap" dir="ltr">
+                            ${cash > 0 ? `-${formatCurrency(cash)}` : '₪0.00'}
+                        </td>
+                        <td class="py-3.5 px-5 text-left whitespace-nowrap">
+                            <span class="inline-block px-2.5 py-1 rounded-lg text-xs font-extrabold border ${balBadgeClass}" dir="ltr">
+                                ${formatCurrency(shiftBalance)}
+                            </span>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            if (emptyState) {
+                if (workerShifts.length === 0) emptyState.classList.remove('hidden');
+                else emptyState.classList.add('hidden');
+            }
+
+            // Update Hero Balance Card
+            const workerNameDisplay = workerObj ? workerObj.fullName : selectedUsername;
+            document.getElementById('summary-worker-badge').textContent = `כרטיס עובד: ${workerNameDisplay}`;
+
+            const balanceEl = document.getElementById('summary-total-balance');
+            balanceEl.textContent = formatCurrency(totalBalance);
+            balanceEl.className = totalBalance >= 0
+                ? 'text-4xl sm:text-5xl font-extrabold tracking-tight mt-1 text-emerald-400'
+                : 'text-4xl sm:text-5xl font-extrabold tracking-tight mt-1 text-red-400';
+
+            document.getElementById('summary-earned-share').textContent = formatCurrency(totalEarnedShare);
+            document.getElementById('summary-fuel-spent').textContent = formatCurrency(totalFuelSpent);
+            document.getElementById('summary-cash-taken').textContent = formatCurrency(totalCashTaken);
+
+            // Update 4 KPI Cards
+            document.getElementById('summary-shifts-count').textContent = workerShifts.length.toLocaleString('en-US');
+            document.getElementById('summary-deliveries-count').textContent = totalShiftDeliveries.toLocaleString('en-US');
+            document.getElementById('summary-deliveries-sub').textContent = `ב-${workerShifts.length} משמרות שביצע`;
+            document.getElementById('summary-km-count').textContent = `${Number(totalShiftKm.toFixed(1)).toLocaleString('en-US')} ק"מ`;
+            document.getElementById('summary-table-badge').textContent = `${workerShifts.length} משמרות`;
+
+            // Top Co-worker Partner Calculation
+            const topPartnerEl = document.getElementById('summary-top-partner');
+            const topPartnerCountEl = document.getElementById('summary-top-partner-count');
+            const sortedPartners = Object.entries(partnerCounts).sort((a, b) => b[1] - a[1]);
+
+            if (sortedPartners.length > 0) {
+                const [topUsername, count] = sortedPartners[0];
+                topPartnerEl.textContent = getUserDisplayName(topUsername);
+                topPartnerCountEl.textContent = `${count} משמרות משותפות יחד`;
+            } else {
+                topPartnerEl.textContent = workerShifts.length > 0 ? 'עבד לבד' : 'אין נתונים';
+                topPartnerCountEl.textContent = workerShifts.length > 0 ? 'ללא שותפים במשמרות' : 'אין משמרות רשומות';
+            }
+        }
+
+        function renderDashboard() {
+            const courierFilter = document.getElementById('filter-courier')?.value || 'all';
+            const dateFrom = document.getElementById('filter-date-from')?.value || '';
+            const dateTo = document.getElementById('filter-date-to')?.value || '';
+
+            const resetBtn = document.getElementById('btn-reset-filters');
+            if (resetBtn) {
+                if ((currentUser && currentUser.role === 'admin' && courierFilter !== 'all') || dateFrom || dateTo) {
+                    resetBtn.classList.remove('hidden');
+                } else {
+                    resetBtn.classList.add('hidden');
+                }
+            }
+
+            const filtered = appData.records
+                .map(normalizeRecord)
+                .filter(rec => {
+                    if (currentUser && currentUser.role !== 'admin') {
+                        if (!rec.couriers.includes(currentUser.username)) return false;
+                    } else if (courierFilter !== 'all') {
+                        if (!rec.couriers.includes(courierFilter)) return false;
+                    }
+                    if (dateFrom && rec.date < dateFrom) return false;
+                    if (dateTo && rec.date > dateTo) return false;
+                    return true;
+                })
+                .sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+            let totalDeliveries = 0;
+            let totalKm = 0;
+            let totalGross = 0;
+            let totalTips = 0;
+            let totalExpenses = 0;
+            let totalNet = 0;
+
+            const tbody = document.getElementById('records-table-body');
+            const emptyState = document.getElementById('records-empty-state');
+            if (tbody) tbody.innerHTML = '';
+
+            filtered.forEach(rec => {
+                const gross = rec.income + rec.tips;
+                const net = gross - rec.expenses;
+                const workersCount = Math.max(1, rec.workersCount || rec.couriers.length || 1);
+                const sharePerWorker = net / workersCount;
+
+                totalDeliveries += rec.deliveries;
+                totalKm += rec.km;
+                totalGross += gross;
+                totalTips += rec.tips;
+                totalExpenses += rec.expenses;
+                totalNet += net;
+
+                const couriersHtml = rec.couriers.map(uname =>
+                    `<span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-bold bg-blue-50 text-[#0265ff] border border-blue-100">${escapeHtml(getUserDisplayName(uname))}</span>`
+                ).join(' ');
+
+                const settlementsHtml = rec.couriers.map(uname => {
+                    const st = rec.settlements[uname] || { cashTaken: 0, fuelSpent: 0 };
+                    const cash = Number(st.cashTaken) || 0;
+                    const fuel = Number(st.fuelSpent) || 0;
+                    const remainder = sharePerWorker - cash + fuel;
+                    const remColor = remainder >= 0 ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50';
+
+                    return `
+                        <div class="text-[11px] leading-snug py-0.5 flex flex-wrap items-center gap-1.5">
+                            <span class="font-bold text-slate-700">${escapeHtml(getUserDisplayName(uname))}:</span>
+                            ${cash > 0 ? `<span class="text-amber-700 bg-amber-50 px-1.5 rounded">לקח ₪${cash}</span>` : ''}
+                            ${fuel > 0 ? `<span class="text-slate-600 bg-slate-100 px-1.5 rounded">דלק ₪${fuel}</span>` : ''}
+                            <span class="${remColor} font-bold px-1.5 rounded" dir="ltr">יתרה: ${formatCurrency(remainder)}</span>
+                        </div>
+                    `;
+                }).join('');
+
+                if (tbody) {
+                    const tr = document.createElement('tr');
+                    tr.className = 'hover:bg-slate-50/80 transition-colors';
+                    tr.innerHTML = `
+                        <td class="py-3.5 px-5 font-semibold text-slate-800 whitespace-nowrap">${escapeHtml(rec.date)}</td>
+                        <td class="py-3.5 px-4">
+                            <div class="flex flex-wrap gap-1">${couriersHtml}</div>
+                            <span class="text-[11px] text-slate-400 mt-0.5 block">חלוקה ל-${workersCount} עובדים</span>
+                        </td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap">
+                            <div class="font-bold text-slate-800">${rec.deliveries} משלוחים</div>
+                            <div class="text-[11px] text-slate-500">${rec.km} ק"מ</div>
+                        </td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap" dir="ltr">
+                            <div class="font-bold text-slate-800">${formatCurrency(gross)}</div>
+                            ${rec.tips > 0 ? `<div class="text-[11px] text-amber-600 font-semibold">כולל ₪${rec.tips} טיפים</div>` : '<div class="text-[11px] text-slate-400">ללא טיפים</div>'}
+                        </td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap font-semibold ${rec.expenses > 0 ? 'text-red-600' : 'text-slate-400'}" dir="ltr">
+                            ${rec.expenses > 0 ? `-${formatCurrency(rec.expenses)}` : '₪0.00'}
+                        </td>
+                        <td class="py-3.5 px-3 text-center whitespace-nowrap" dir="ltr">
+                            <div class="font-extrabold text-[#16a34a]">${formatCurrency(net)}</div>
+                            <div class="text-[11px] font-bold text-[#0265ff]">${formatCurrency(sharePerWorker)} לעובד</div>
+                        </td>
+                        <td class="py-3.5 px-4 min-w-[200px]">
+                            ${settlementsHtml}
+                        </td>
+                        <td class="py-3.5 px-4 text-xs text-slate-500 max-w-[160px] truncate" title="${escapeHtml(rec.notes)}">
+                            ${rec.notes ? escapeHtml(rec.notes) : '<span class="text-slate-300">-</span>'}
+                        </td>
+                        <td class="py-3.5 px-5 text-left whitespace-nowrap">
+                            <div class="inline-flex items-center gap-1">
+                                <button type="button" data-edit-rec="${escapeHtml(rec.id)}" title="ערוך"
+                                    class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                                    <i data-lucide="pencil" class="w-4 h-4"></i>
+                                </button>
+                                <button type="button" data-del-rec="${escapeHtml(rec.id)}" title="מחק"
+                                    class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            });
+
+            if (emptyState) {
+                if (filtered.length === 0) emptyState.classList.remove('hidden');
+                else emptyState.classList.add('hidden');
+            }
+
+            document.getElementById('kpi-deliveries').textContent = totalDeliveries.toLocaleString('en-US');
+            document.getElementById('kpi-km').textContent = `${Number(totalKm.toFixed(1)).toLocaleString('en-US')} ק"מ`;
+            document.getElementById('kpi-gross').textContent = formatCurrency(totalGross);
+            document.getElementById('kpi-tips-sub').textContent = `טיפים: ${formatCurrency(totalTips)}`;
+            document.getElementById('kpi-net').textContent = formatCurrency(totalNet);
+            document.getElementById('kpi-expenses-sub').textContent = `הוצאות: ${formatCurrency(totalExpenses)}`;
+            document.getElementById('records-count-badge').textContent = `סה"כ ${filtered.length} רשומות`;
+
+            if (tbody) {
+                lucide.createIcons({ root: tbody });
+                tbody.querySelectorAll('[data-edit-rec]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const rec = appData.records.find(r => r.id === btn.dataset.editRec);
+                        if (rec) openRecordModal(rec);
+                    });
+                });
+                tbody.querySelectorAll('[data-del-rec]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.delRec;
+                        openConfirmModal('מחיקת רשומת משמרת', 'האם אתה בטוח שברצונך למחוק משמרת זו? פעולה זו אינה הפיכה.', async () => {
+                            appData.records = appData.records.filter(r => r.id !== id);
+                            refreshAllUI();
+                            await pushToGitHub(true);
+                            showToast('הרשומה נמחקה בהצלחה');
+                        });
+                    });
+                });
+            }
+        }
+
+        function renderUsersTable() {
+            const tbody = document.getElementById('users-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+
+            appData.users.forEach(user => {
+                const isAdmin = user.role === 'admin';
+                const isActive = user.status === 'active';
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50/80 transition-colors';
+                tr.innerHTML = `
+                    <td class="py-3.5 px-6 font-bold text-slate-800">${escapeHtml(user.fullName)}</td>
+                    <td class="py-3.5 px-4 font-mono text-xs text-slate-600" dir="ltr">${escapeHtml(user.username)}</td>
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isAdmin ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-[#0265ff]'}">
+                            ${isAdmin ? 'מנהל' : 'שליח'}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-4 text-center text-slate-600">${escapeHtml(user.vehicle || '-')}</td>
+                    <td class="py-3.5 px-4 text-center text-slate-600" dir="ltr">${escapeHtml(user.phone || '-')}</td>
+                    <td class="py-3.5 px-4 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
+                            ${isActive ? 'פעיל' : 'לא פעיל'}
+                        </span>
+                    </td>
+                    <td class="py-3.5 px-6 text-left whitespace-nowrap">
+                        <div class="inline-flex items-center gap-1">
+                            <button type="button" data-edit-user="${escapeHtml(user.username)}" title="ערוך משתמש"
+                                class="p-1.5 rounded-lg text-slate-500 hover:text-blue-600 hover:bg-blue-50 transition-colors cursor-pointer">
+                                <i data-lucide="pencil" class="w-4 h-4"></i>
+                            </button>
+                            ${user.username !== 'admin' ? `
+                            <button type="button" data-del-user="${escapeHtml(user.username)}" title="מחק משתמש"
+                                class="p-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>` : ''}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            lucide.createIcons({ root: tbody });
+
+            tbody.querySelectorAll('[data-edit-user]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userObj = appData.users.find(u => u.username === btn.dataset.editUser);
+                    if (userObj) openUserModal(userObj);
+                });
+            });
+
+            tbody.querySelectorAll('[data-del-user]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const uname = btn.dataset.delUser;
+                    openConfirmModal('מחיקת משתמש', `האם אתה בטוח שברצונך למחוק את המשתמש "${uname}"?`, async () => {
+                        appData.users = appData.users.filter(u => u.username !== uname);
+                        refreshAllUI();
+                        await pushToGitHub(true);
+                        showToast('המשתמש נמחק בהצלחה');
+                    });
+                });
+            });
+        }
+
+        // ==========================================
+        // RECORD & USER MODAL HELPERS
+        // ==========================================
+
+        function getSelectedCouriersFromModal() {
+            return [...document.querySelectorAll('#record-couriers-checkboxes input[type="checkbox"]:checked')]
+                .map(cb => cb.value);
+        }
+
+        function captureCurrentSettlementValues() {
+            const settlements = {};
+            document.querySelectorAll('#record-settlements-list [data-settlement-user]').forEach(row => {
+                const uname = row.dataset.settlementUser;
+                const cashTaken = parseFloat(row.querySelector('.settlement-cash')?.value) || 0;
+                const fuelSpent = parseFloat(row.querySelector('.settlement-fuel')?.value) || 0;
+                settlements[uname] = { cashTaken, fuelSpent };
+            });
+            return settlements;
+        }
+
+        function renderRecordSettlementRows(existingSettlements = {}) {
+            const container = document.getElementById('record-settlements-list');
+            const selected = getSelectedCouriersFromModal();
+            container.innerHTML = '';
+
+            if (selected.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 italic">בחר לפחות שליח אחד כדי להזין התחשבנות אישית.</p>';
+                return;
+            }
+
+            selected.forEach(uname => {
+                const st = existingSettlements[uname] || { cashTaken: 0, fuelSpent: 0 };
+                const row = document.createElement('div');
+                row.dataset.settlementUser = uname;
+                row.className = 'bg-white rounded-xl p-2.5 border border-slate-200/80 grid grid-cols-1 sm:grid-cols-3 items-center gap-2';
+                row.innerHTML = `
+                    <div class="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-[#0265ff]"></span>
+                        <span>${escapeHtml(getUserDisplayName(uname))}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-[11px] text-slate-500 whitespace-nowrap">מזומן לקח (₪):</label>
+                        <input type="number" min="0" step="0.01" value="${st.cashTaken || ''}" placeholder="0"
+                            class="settlement-cash w-full bg-amber-50/70 border border-amber-200/70 rounded-lg px-2 py-1 text-xs font-bold text-amber-800 text-center outline-none">
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-[11px] text-slate-500 whitespace-nowrap">הוציא דלק (₪):</label>
+                        <input type="number" min="0" step="0.01" value="${st.fuelSpent || ''}" placeholder="0"
+                            class="settlement-fuel w-full bg-slate-100 border border-slate-200/70 rounded-lg px-2 py-1 text-xs font-bold text-slate-800 text-center outline-none">
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        function updateRecordPreview() {
+            const income = parseFloat(document.getElementById('record-income').value) || 0;
+            const tips = parseFloat(document.getElementById('record-tips').value) || 0;
+            const expenses = parseFloat(document.getElementById('record-expenses').value) || 0;
+            const workers = Math.max(1, parseInt(document.getElementById('record-workers-count').value, 10) || 1);
+
+            const gross = income + tips;
+            const net = gross - expenses;
+            const perWorker = net / workers;
+
+            document.getElementById('preview-gross').textContent = formatCurrency(gross);
+            document.getElementById('preview-net').textContent = formatCurrency(net);
+            document.getElementById('preview-workers-label').textContent = workers;
+            document.getElementById('preview-per-worker').textContent = formatCurrency(perWorker);
+        }
+
+        function openRecordModal(record = null) {
+            const normalized = record ? normalizeRecord(record) : null;
+            document.getElementById('modal-record-title').textContent = normalized ? 'עריכת משמרת / משלוחים' : 'הוסף משמרת / משלוחים';
+            document.getElementById('record-id').value = normalized ? normalized.id : '';
+            document.getElementById('record-date').value = normalized ? normalized.date : new Date().toISOString().split('T')[0];
+            document.getElementById('record-deliveries').value = normalized ? normalized.deliveries : '';
+            document.getElementById('record-km').value = normalized ? normalized.km : '';
+            document.getElementById('record-income').value = normalized ? normalized.income : '';
+            document.getElementById('record-tips').value = normalized && normalized.tips ? normalized.tips : '';
+            document.getElementById('record-expenses').value = normalized && normalized.expenses ? normalized.expenses : '';
+            document.getElementById('record-notes').value = normalized ? normalized.notes : '';
+
+            const defaultSelected = normalized
+                ? normalized.couriers
+                : (currentUser ? [currentUser.username] : [appData.users[0]?.username || 'admin']);
+
+            const checkboxesWrap = document.getElementById('record-couriers-checkboxes');
+            checkboxesWrap.innerHTML = '';
+
+            appData.users.forEach(u => {
+                const checked = defaultSelected.includes(u.username);
+                const disabled = (currentUser && currentUser.role !== 'admin' && u.username !== currentUser.username);
+                const label = document.createElement('label');
+                label.className = `inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer select-none transition-all ${
+                    checked ? 'bg-blue-50 border-blue-400 text-[#0265ff]' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                } ${disabled ? 'opacity-60 cursor-not-allowed' : ''}`;
+                label.innerHTML = `
+                    <input type="checkbox" value="${escapeHtml(u.username)}" ${checked ? 'checked' : ''} ${disabled ? 'disabled' : ''} class="accent-[#0265ff] rounded">
+                    <span>${escapeHtml(u.fullName)}</span>
+                `;
+                const cb = label.querySelector('input');
+                cb.addEventListener('change', () => {
+                    const currentSettlements = captureCurrentSettlementValues();
+                    if (cb.checked) {
+                        label.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer select-none transition-all bg-blue-50 border-blue-400 text-[#0265ff]';
+                    } else {
+                        label.className = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold cursor-pointer select-none transition-all bg-white border-slate-200 text-slate-600 hover:bg-slate-50';
+                    }
+                    const count = Math.max(1, getSelectedCouriersFromModal().length);
+                    document.getElementById('record-workers-count').value = count;
+                    renderRecordSettlementRows(currentSettlements);
+                    updateRecordPreview();
+                });
+                checkboxesWrap.appendChild(label);
+            });
+
+            document.getElementById('record-workers-count').value = normalized
+                ? normalized.workersCount
+                : Math.max(1, defaultSelected.length);
+
+            renderRecordSettlementRows(normalized ? normalized.settlements : {});
+            updateRecordPreview();
+
+            const modal = document.getElementById('modal-record');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons({ root: modal });
+        }
+
+        function openUserModal(user = null) {
+            document.getElementById('modal-user-title').textContent = user ? 'עריכת משתמש' : 'הוסף משתמש חדש';
+            document.getElementById('user-edit-original-username').value = user ? user.username : '';
+            document.getElementById('user-fullname').value = user ? user.fullName : '';
+            document.getElementById('user-username').value = user ? user.username : '';
+            document.getElementById('user-password').value = user ? user.password : '';
+            document.getElementById('user-role').value = user ? user.role : 'courier';
+            document.getElementById('user-vehicle').value = user ? user.vehicle : 'רכב';
+            document.getElementById('user-phone').value = user ? user.phone : '';
+            document.getElementById('user-status').value = user ? user.status : 'active';
+
+            const modal = document.getElementById('modal-user');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            lucide.createIcons({ root: modal });
+        }
+
+        // ==========================================
+        // AUTHENTICATION & VIEW NAVIGATION
+        // ==========================================
+
+        function enterAppView(user) {
+            currentUser = user;
+            localStorage.setItem(STORAGE_KEYS.SESSION, user.username);
+
+            document.getElementById('login-view').classList.add('hidden');
+            const appView = document.getElementById('app-view');
+            appView.classList.remove('hidden');
+            appView.classList.add('flex');
+
+            const roleLabel = user.role === 'admin' ? 'מנהל מערכת' : 'שליח';
+            document.getElementById('user-greeting').textContent = `שלום, ${user.fullName} (${roleLabel})`;
+
+            const usersTabBtn = document.getElementById('tab-users');
+            const courierFilterWrap = document.getElementById('filter-courier-wrapper');
+            if (user.role === 'admin') {
+                usersTabBtn.classList.remove('hidden');
+                courierFilterWrap.classList.remove('hidden');
+            } else {
+                usersTabBtn.classList.add('hidden');
+                courierFilterWrap.classList.add('hidden');
+                if (currentTab === 'users') switchTab('dashboard');
+            }
+
+            refreshAllUI();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            const dashSec = document.getElementById('section-dashboard');
+            const summarySec = document.getElementById('section-worker-summary');
+            const usersSec = document.getElementById('section-users');
+
+            const tabDash = document.getElementById('tab-dashboard');
+            const tabSummary = document.getElementById('tab-worker-summary');
+            const tabUsers = document.getElementById('tab-users');
+
+            const activeClass = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all bg-blue-50 text-[#0265ff] cursor-pointer';
+            const inactiveClass = 'px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 text-slate-600 hover:bg-slate-50 transition-all cursor-pointer';
+
+            dashSec.classList.add('hidden');
+            summarySec.classList.add('hidden');
+            usersSec.classList.add('hidden');
+
+            tabDash.className = inactiveClass;
+            tabSummary.className = inactiveClass;
+            tabUsers.className = inactiveClass;
+
+            if (tab === 'users') {
+                usersSec.classList.remove('hidden');
+                tabUsers.className = activeClass;
+            } else if (tab === 'worker-summary') {
+                summarySec.classList.remove('hidden');
+                tabSummary.className = activeClass;
+                renderWorkerSummary();
+            } else {
+                dashSec.classList.remove('hidden');
+                tabDash.className = activeClass;
+            }
+        }
+
+        // ==========================================
+        // EVENT LISTENERS & BOOTSTRAP
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            let isLoginTokenVerified = false;
+            const loginTokenInput = document.getElementById('login-gh-token');
+            const loginFieldset = document.getElementById('login-credentials-fieldset');
+            const loginTokenStatus = document.getElementById('login-token-status');
+            const loginTokenMsg = document.getElementById('login-token-msg');
+            const verifyTokenBtn = document.getElementById('btn-verify-login-token');
+
+            function setTokenVerifiedState(verified, message = '') {
+                isLoginTokenVerified = verified;
+                if (verified) {
+                    loginFieldset.disabled = false;
+                    loginFieldset.classList.remove('opacity-50');
+                    loginTokenStatus.textContent = 'מאומת ומסונכרן';
+                    loginTokenStatus.className = 'text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full';
+                    if (message) {
+                        loginTokenMsg.textContent = message;
+                        loginTokenMsg.className = 'text-[11px] font-medium text-emerald-600';
+                        loginTokenMsg.classList.remove('hidden');
+                    }
+                } else {
+                    loginFieldset.disabled = true;
+                    loginFieldset.classList.add('opacity-50');
+                    loginTokenStatus.textContent = 'ממתין לאימות';
+                    loginTokenStatus.className = 'text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full';
+                    if (message) {
+                        loginTokenMsg.textContent = message;
+                        loginTokenMsg.className = 'text-[11px] font-medium text-red-600';
+                        loginTokenMsg.classList.remove('hidden');
+                    } else {
+                        loginTokenMsg.classList.add('hidden');
+                    }
+                }
+            }
+
+            async function verifyLoginTokenAndSync() {
+                const tokenVal = loginTokenInput.value.trim();
+                if (!tokenVal) {
+                    setTokenVerifiedState(false, 'נא להזין GitHub Token תחילה.');
+                    return;
+                }
+
+                verifyTokenBtn.disabled = true;
+                verifyTokenBtn.textContent = 'מאמת...';
+                saveGithubConfig({ ...githubConfig, token: tokenVal });
+
+                const ok = await pullFromGitHub(true);
+                verifyTokenBtn.disabled = false;
+                verifyTokenBtn.textContent = 'אמת טוקן';
+
+                if (ok) {
+                    setTokenVerifiedState(true, 'הטוקן אומת (נשמר בזיכרון הסשן בלבד). כעת ניתן להתחבר.');
+                } else {
+                    githubConfig.token = '';
+                    setTokenVerifiedState(false, 'אימות הטוקן נכשל. בדוק שהטוקן תקין ובעל הרשאות לריפו.');
+                }
+            }
+
+            verifyTokenBtn.addEventListener('click', verifyLoginTokenAndSync);
+
+            // Reset verification state if user edits the token input
+            loginTokenInput.addEventListener('input', () => {
+                if (isLoginTokenVerified) {
+                    githubConfig.token = '';
+                    setTokenVerifiedState(false);
+                }
+            });
+
+            // Quick-fill admin login
+            document.getElementById('quick-fill-admin').addEventListener('click', () => {
+                document.getElementById('login-username').value = 'admin';
+                document.getElementById('login-password').value = '123';
+            });
+
+            // Login form submission (strictly verified against GitHub data)
+            document.getElementById('login-form').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if (!isLoginTokenVerified) {
+                    setTokenVerifiedState(false, 'יש לאמת את ה-Token לפני ההתחברות.');
+                    return;
+                }
+
+                const username = document.getElementById('login-username').value.trim();
+                const password = document.getElementById('login-password').value.trim();
+                const errBox = document.getElementById('login-error');
+
+                // Pull latest data from GitHub right before verifying credentials
+                const synced = await pullFromGitHub(true);
+                if (!synced) {
+                    setTokenVerifiedState(false, 'החיבור ל-GitHub נכשל. אמת את הטוקן שוב.');
+                    return;
+                }
+
+                const matched = appData.users.find(
+                    u => u.username.trim().toLowerCase() === username.toLowerCase() &&
+                         String(u.password).trim() === password &&
+                         u.status === 'active'
+                );
+
+                if (!matched) {
+                    errBox.classList.remove('hidden');
+                    return;
+                }
+
+                errBox.classList.add('hidden');
+                enterAppView(matched);
+            });
+
+            // Logout (clears token from memory as well)
+            document.getElementById('btn-logout').addEventListener('click', () => {
+                currentUser = null;
+                githubConfig.token = '';
+                localStorage.removeItem(STORAGE_KEYS.SESSION);
+                document.getElementById('app-view').classList.add('hidden');
+                document.getElementById('app-view').classList.remove('flex');
+                document.getElementById('login-view').classList.remove('hidden');
+                document.getElementById('login-gh-token').value = '';
+                document.getElementById('login-password').value = '';
+                setTokenVerifiedState(false);
+            });
+
+            // Navigation Tabs
+            document.getElementById('tab-dashboard').addEventListener('click', () => switchTab('dashboard'));
+            document.getElementById('tab-worker-summary').addEventListener('click', () => switchTab('worker-summary'));
+            document.getElementById('tab-users').addEventListener('click', () => switchTab('users'));
+
+            // Worker Summary Controls
+            document.getElementById('summary-worker-select').addEventListener('change', renderWorkerSummary);
+            document.getElementById('summary-date-from').addEventListener('change', renderWorkerSummary);
+            document.getElementById('summary-date-to').addEventListener('change', renderWorkerSummary);
+            document.getElementById('btn-reset-summary-dates').addEventListener('click', () => {
+                document.getElementById('summary-date-from').value = '';
+                document.getElementById('summary-date-to').value = '';
+                renderWorkerSummary();
+            });
+
+            // Dashboard Filters
+            document.getElementById('filter-courier').addEventListener('change', renderDashboard);
+            document.getElementById('filter-date-from').addEventListener('change', renderDashboard);
+            document.getElementById('filter-date-to').addEventListener('change', renderDashboard);
+            document.getElementById('btn-reset-filters').addEventListener('click', () => {
+                document.getElementById('filter-courier').value = 'all';
+                document.getElementById('filter-date-from').value = '';
+                document.getElementById('filter-date-to').value = '';
+                renderDashboard();
+            });
+
+            // Add Record Button & Live Preview Listeners
+            document.getElementById('btn-add-record').addEventListener('click', () => openRecordModal());
+            ['record-income', 'record-tips', 'record-expenses', 'record-workers-count'].forEach(id => {
+                document.getElementById(id).addEventListener('input', updateRecordPreview);
+            });
+
+            // Save Record Form
+            document.getElementById('form-record').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const selectedCouriers = getSelectedCouriersFromModal();
+                if (selectedCouriers.length === 0) {
+                    showToast('יש לבחור לפחות שליח אחד למשמרת', 'error');
+                    return;
+                }
+
+                const existingId = document.getElementById('record-id').value;
+                const recordObj = normalizeRecord({
+                    id: existingId || `rec-${Date.now()}`,
+                    date: document.getElementById('record-date').value,
+                    couriers: selectedCouriers,
+                    workersCount: Math.max(1, parseInt(document.getElementById('record-workers-count').value, 10) || selectedCouriers.length),
+                    deliveries: parseInt(document.getElementById('record-deliveries').value, 10) || 0,
+                    km: parseFloat(document.getElementById('record-km').value) || 0,
+                    income: parseFloat(document.getElementById('record-income').value) || 0,
+                    tips: parseFloat(document.getElementById('record-tips').value) || 0,
+                    expenses: parseFloat(document.getElementById('record-expenses').value) || 0,
+                    settlements: captureCurrentSettlementValues(),
+                    notes: document.getElementById('record-notes').value.trim()
+                });
+
+                if (existingId) {
+                    const idx = appData.records.findIndex(r => r.id === existingId);
+                    if (idx !== -1) appData.records[idx] = recordObj;
+                } else {
+                    appData.records.unshift(recordObj);
+                }
+
+                closeAllModals();
+                refreshAllUI();
+                await pushToGitHub(true);
+                showToast(existingId ? 'הרשומה עודכנה בהצלחה' : 'המשמרת נוספה בהצלחה');
+            });
+
+            // Add User Button & Save User Form
+            document.getElementById('btn-add-user').addEventListener('click', () => openUserModal());
+            document.getElementById('form-user').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const originalUsername = document.getElementById('user-edit-original-username').value;
+                const newUsername = document.getElementById('user-username').value.trim();
+
+                if (!newUsername) {
+                    showToast('שם המשתמש אינו יכול להיות ריק', 'error');
+                    return;
+                }
+
+                // Check for duplicate username (allow keeping the same username when editing)
+                const isDuplicate = appData.users.some(u =>
+                    u.username.toLowerCase() === newUsername.toLowerCase() &&
+                    u.username !== originalUsername
+                );
+
+                if (isDuplicate) {
+                    showToast('שם המשתמש כבר קיים במערכת, בחר שם אחר', 'error');
+                    return;
+                }
+
+                const userObj = {
+                    fullName: document.getElementById('user-fullname').value.trim(),
+                    username: newUsername,
+                    password: document.getElementById('user-password').value.trim(),
+                    role: document.getElementById('user-role').value,
+                    vehicle: document.getElementById('user-vehicle').value,
+                    phone: document.getElementById('user-phone').value.trim(),
+                    status: document.getElementById('user-status').value
+                };
+
+                if (originalUsername) {
+                    const idx = appData.users.findIndex(u => u.username === originalUsername);
+                    if (idx !== -1) appData.users[idx] = userObj;
+
+                    // Migrate existing shift records & personal settlements if username changed
+                    if (originalUsername !== newUsername) {
+                        appData.records = appData.records.map(rec => {
+                            const updatedCouriers = (rec.couriers || []).map(c => c === originalUsername ? newUsername : c);
+                            const updatedSettlements = { ...(rec.settlements || {}) };
+                            if (Object.prototype.hasOwnProperty.call(updatedSettlements, originalUsername)) {
+                                updatedSettlements[newUsername] = updatedSettlements[originalUsername];
+                                delete updatedSettlements[originalUsername];
+                            }
+                            return normalizeRecord({
+                                ...rec,
+                                couriers: updatedCouriers,
+                                courierUsername: rec.courierUsername === originalUsername ? newUsername : rec.courierUsername,
+                                settlements: updatedSettlements
+                            });
+                        });
+
+                        // Update active session if the logged-in user edited their own username
+                        if (currentUser && currentUser.username === originalUsername) {
+                            currentUser = userObj;
+                            localStorage.setItem(STORAGE_KEYS.SESSION, newUsername);
+                            const roleLabel = userObj.role === 'admin' ? 'מנהל מערכת' : 'שליח';
+                            document.getElementById('user-greeting').textContent = `שלום, ${userObj.fullName} (${roleLabel})`;
+                        }
+                    }
+                } else {
+                    appData.users.push(userObj);
+                }
+
+                closeAllModals();
+                refreshAllUI();
+                await pushToGitHub(true);
+                showToast(originalUsername ? 'פרטי המשתמש עודכנו' : 'משתמש חדש נוסף בהצלחה');
+            });
+
+            // Open GitHub Modal & Save Settings
+            document.getElementById('btn-open-github-modal').addEventListener('click', () => {
+                document.getElementById('gh-owner').value = githubConfig.owner || '';
+                document.getElementById('gh-repo').value = githubConfig.repo || '';
+                document.getElementById('gh-branch').value = githubConfig.branch || 'main';
+                document.getElementById('gh-path').value = githubConfig.path || 'data.json';
+                document.getElementById('gh-token').value = '';
+                document.getElementById('gh-token').placeholder = githubConfig.token
+                    ? 'טוקן פעיל בזיכרון (השאר ריק כדי לשמור עליו)'
+                    : 'ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+
+                const modal = document.getElementById('modal-github');
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            });
+
+            document.getElementById('form-github').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const typedToken = document.getElementById('gh-token').value.trim();
+                saveGithubConfig({
+                    owner: document.getElementById('gh-owner').value.trim(),
+                    repo: document.getElementById('gh-repo').value.trim(),
+                    branch: document.getElementById('gh-branch').value.trim() || 'main',
+                    path: document.getElementById('gh-path').value.trim() || 'data.json',
+                    token: typedToken || githubConfig.token
+                });
+                closeAllModals();
+                await pullFromGitHub(false);
+            });
+
+            // Push & Pull GitHub Toolbar Buttons
+            document.getElementById('btn-push-github').addEventListener('click', () => {
+                pushToGitHub(false);
+            });
+
+            document.getElementById('btn-sync-github').addEventListener('click', () => {
+                pullFromGitHub(false);
+            });
+
+            // Modal Close Handlers
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', closeAllModals);
+            });
+
+            document.getElementById('btn-confirm-no').addEventListener('click', closeAllModals);
+            document.getElementById('btn-confirm-yes').addEventListener('click', async () => {
+                if (typeof pendingConfirmCallback === 'function') {
+                    await pendingConfirmCallback();
+                }
+                closeAllModals();
+            });
+
+            // Close modal when clicking backdrop
+            document.querySelectorAll('#modal-record, #modal-user, #modal-github, #modal-confirm').forEach(backdrop => {
+                backdrop.addEventListener('click', (e) => {
+                    if (e.target === backdrop) closeAllModals();
+                });
+            });
+        });
+    </script>
+</body>
 </html>
